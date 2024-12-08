@@ -1,124 +1,196 @@
--- Raindrop V4 Full Script by Raindrop Oblistive
+-- Raindrop V4
+-- Credits: raindropoblistive (Discord)
+-- Author: Raindrop
 
 -- Services
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
+local Player = game.Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Mouse = Player:GetMouse()
+local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local RS = game:GetService("ReplicatedStorage")
 
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+-- Settings
+local FlySpeed = 50
+local AimbotFov = 50
+local AimbotSmoothness = 0.1
+local HitboxColor = Color3.fromRGB(255, 0, 0)
 
--- Screen GUI
-local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+-- Keybinds
+local Keybinds = {
+    Fly = Enum.KeyCode.Space,
+    Aimbot = Enum.KeyCode.E,
+    Hitbox = Enum.KeyCode.H,
+    ToggleGUI = Enum.KeyCode.LeftControl
+}
 
--- Main Frame
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0.5, 0, 0.7, 0)
-MainFrame.Position = UDim2.new(0.25, 0, 0.15, 0)
+-- Variables
+local FlyActive = false
+local AimbotActive = false
+local HitboxGUIOpen = false
+local FlyVelocity = nil
+local AimbotConnection = nil
+
+-- GUI Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.Players.LocalPlayer.PlayerGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 400, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -200)
 MainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-MainFrame.Visible = false
+MainFrame.BackgroundTransparency = 0.5
+MainFrame.Parent = ScreenGui
 
-local Title = Instance.new("TextLabel", MainFrame)
+local Title = Instance.new("TextLabel")
 Title.Text = "Raindrop V4"
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 28
+Title.Size = UDim2.new(1, 0, 0.1, 0)
 Title.TextColor3 = Color3.fromRGB(0, 100, 255)
-Title.Size = UDim2.new(1, 0, 0.15, 0)
 Title.BackgroundTransparency = 1
+Title.TextScaled = true
+Title.Parent = MainFrame
 
--- Tabs
-local Tabs = Instance.new("Frame", MainFrame)
-Tabs.Size = UDim2.new(0.2, 0, 0.85, 0)
-Tabs.Position = UDim2.new(0, 0, 0.15, 0)
-Tabs.BackgroundColor3 = Color3.fromRGB(0, 100, 255)
+-- Fly Logic
+local function StartFlying()
+    if FlyActive then return end
+    FlyActive = true
 
-local TabContent = Instance.new("Frame", MainFrame)
-TabContent.Size = UDim2.new(0.8, 0, 0.85, 0)
-TabContent.Position = UDim2.new(0.2, 0, 0.15, 0)
-TabContent.BackgroundColor3 = Color3.fromRGB(240, 240, 255)
+    -- Create BodyVelocity to simulate flying
+    FlyVelocity = Instance.new("BodyVelocity")
+    FlyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
+    FlyVelocity.Velocity = Vector3.new(0, FlySpeed, 0)
+    FlyVelocity.Parent = Character:WaitForChild("HumanoidRootPart")
+end
 
--- Create Tab Button Function
-local function CreateTab(tabName, callback)
-    local TabButton = Instance.new("TextButton", Tabs)
-    TabButton.Text = tabName
-    TabButton.Size = UDim2.new(1, 0, 0.2, 0)
-    TabButton.Font = Enum.Font.Gotham
-    TabButton.TextSize = 18
-    TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TabButton.BackgroundTransparency = 0.1
+local function StopFlying()
+    if not FlyActive then return end
+    FlyActive = false
 
-    TabButton.MouseButton1Click:Connect(function()
-        for _, child in pairs(TabContent:GetChildren()) do
-            if child:IsA("Frame") then
-                child.Visible = false
+    -- Destroy the BodyVelocity to stop flying
+    if FlyVelocity then
+        FlyVelocity:Destroy()
+        FlyVelocity = nil
+    end
+end
+
+-- Aimbot Logic
+local function StartAimbot()
+    if AimbotActive then return end
+    AimbotActive = true
+
+    -- Aimbot target logic
+    AimbotConnection = RunService.RenderStepped:Connect(function()
+        if not AimbotActive then return end
+        local closestPlayer = nil
+        local closestDistance = AimbotFov
+        for _, target in pairs(game.Players:GetPlayers()) do
+            if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                local distance = (Character.HumanoidRootPart.Position - target.Character.HumanoidRootPart.Position).Magnitude
+                if distance < closestDistance then
+                    closestDistance = distance
+                    closestPlayer = target
+                end
             end
         end
-        callback()
+
+        if closestPlayer then
+            -- Smoothly aim towards the closest player
+            local direction = (closestPlayer.Character.HumanoidRootPart.Position - Mouse.Hit.p).unit
+            local newCFrame = CFrame.new(Mouse.Hit.p, closestPlayer.Character.HumanoidRootPart.Position)
+            TweenService:Create(Mouse, TweenInfo.new(AimbotSmoothness, Enum.EasingStyle.Linear), {CFrame = newCFrame}):Play()
+        end
     end)
 end
 
--- Create Content Frames
-local WelcomeFrame = Instance.new("Frame", TabContent)
-WelcomeFrame.Size = UDim2.new(1, 0, 1, 0)
-WelcomeFrame.BackgroundTransparency = 1
-WelcomeFrame.Visible = true
+local function StopAimbot()
+    if not AimbotActive then return end
+    AimbotActive = false
 
-local WelcomeText = Instance.new("TextLabel", WelcomeFrame)
-WelcomeText.Text = "Welcome to Raindrop V4!\nA Universal Version Instead of The Streets."
-WelcomeText.Font = Enum.Font.GothamBold
-WelcomeText.TextSize = 20
-WelcomeText.TextColor3 = Color3.fromRGB(0, 0, 0)
-WelcomeText.Size = UDim2.new(1, 0, 1, 0)
-WelcomeText.BackgroundTransparency = 1
+    -- Disconnect the Aimbot logic
+    if AimbotConnection then
+        AimbotConnection:Disconnect()
+        AimbotConnection = nil
+    end
+end
 
--- Credits Frame
-local CreditsFrame = Instance.new("Frame", TabContent)
-CreditsFrame.Size = UDim2.new(1, 0, 1, 0)
-CreditsFrame.BackgroundTransparency = 1
+-- Hitbox GUI Logic
+local function ToggleHitboxGUI()
+    HitboxGUIOpen = not HitboxGUIOpen
+    if HitboxGUIOpen then
+        -- Create Hitbox GUI
+        local HitboxFrame = Instance.new("Frame")
+        HitboxFrame.Size = UDim2.new(0.3, 0, 0.5, 0)
+        HitboxFrame.Position = UDim2.new(0.7, 0, 0, 0)
+        HitboxFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        HitboxFrame.BackgroundTransparency = 0.3
+        HitboxFrame.Name = "HitboxFrame"
+        HitboxFrame.Parent = ScreenGui
 
-local CreditsText = Instance.new("TextLabel", CreditsFrame)
-CreditsText.Text = [[
------------------- Credits! Always Needs Credits
-My Discord: raindropoblistive
-Dev: Raindrop
-Who Made It! - Raindrop
-I Love You Guys! - From Raindrop
-]]
-CreditsText.Font = Enum.Font.Gotham
-CreditsText.TextSize = 20
-CreditsText.TextColor3 = Color3.fromRGB(0, 0, 0)
-CreditsText.Size = UDim2.new(1, 0, 1, 0)
-CreditsText.BackgroundTransparency = 1
+        local HitboxTitle = Instance.new("TextLabel")
+        HitboxTitle.Text = "Raindrop Hitbox GUI"
+        HitboxTitle.Size = UDim2.new(1, 0, 0.1, 0)
+        HitboxTitle.TextColor3 = Color3.fromRGB(0, 100, 255)
+        HitboxTitle.BackgroundTransparency = 1
+        HitboxTitle.TextScaled = true
+        HitboxTitle.Parent = HitboxFrame
+    else
+        -- Remove Hitbox GUI
+        local HitboxFrame = ScreenGui:FindFirstChild("HitboxFrame")
+        if HitboxFrame then
+            HitboxFrame:Destroy()
+        end
+    end
+end
 
--- Features Frame
-local FeaturesFrame = Instance.new("Frame", TabContent)
-FeaturesFrame.Size = UDim2.new(1, 0, 1, 0)
-FeaturesFrame.BackgroundTransparency = 1
+-- Keybind Logic
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
 
-local FeaturesText = Instance.new("TextLabel", FeaturesFrame)
-FeaturesText.Text = "Fly, Aimbot, Hitbox, and More Coming Soon!"
-FeaturesText.Font = Enum.Font.GothamBold
-FeaturesText.TextSize = 20
-FeaturesText.TextColor3 = Color3.fromRGB(0, 0, 0)
-FeaturesText.Size = UDim2.new(1, 0, 1, 0)
-FeaturesText.BackgroundTransparency = 1
+    if input.KeyCode == Keybinds.Fly then
+        if FlyActive then
+            StopFlying()
+        else
+            StartFlying()
+        end
+    end
 
--- Initialize Tabs
-CreateTab("Welcome", function() WelcomeFrame.Visible = true end)
-CreateTab("Features", function() FeaturesFrame.Visible = true end)
-CreateTab("Credits", function() CreditsFrame.Visible = true end)
+    if input.KeyCode == Keybinds.Aimbot then
+        if AimbotActive then
+            StopAimbot()
+        else
+            StartAimbot()
+        end
+    end
 
--- CmdBar Trigger
-Player.Chatted:Connect(function(msg)
-    if msg:lower() == "/raindrop" then
-        MainFrame.Visible = not MainFrame.Visible
+    if input.KeyCode == Keybinds.Hitbox then
+        ToggleHitboxGUI()
+    end
+
+    if input.KeyCode == Keybinds.ToggleGUI then
+        ScreenGui.Enabled = not ScreenGui.Enabled
     end
 end)
 
--- Keyboard Trigger
-UserInputService.InputBegan:Connect(function(input, gp)
-    if not gp and input.KeyCode == Enum.KeyCode.Slash then
-        MainFrame.Visible = not MainFrame.Visible
+-- Clean up when player leaves
+Player.CharacterAdded:Connect(function()
+    if FlyActive then
+        StopFlying()
+    end
+    if AimbotActive then
+        StopAimbot()
     end
 end)
+
+-- Credits and Info Section
+local Credits = Instance.new("TextLabel")
+Credits.Text = "Raindrop V4\nMade By Raindrop\nDiscord: raindropoblistive"
+Credits.Size = UDim2.new(1, 0, 0.2, 0)
+Credits.Position = UDim2.new(0, 0, 0.9, 0)
+Credits.TextColor3 = Color3.fromRGB(255, 255, 255)
+Credits.BackgroundTransparency = 1
+Credits.TextScaled = true
+Credits.Parent = ScreenGui
+
+-- Display GUI by Default
+ScreenGui.Enabled = false
