@@ -1,0 +1,124 @@
+-- Raindrop V4 Full Script by Raindrop Oblistive
+
+-- Services
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+-- Screen GUI
+local ScreenGui = Instance.new("ScreenGui", PlayerGui)
+
+-- Main Frame
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0.5, 0, 0.7, 0)
+MainFrame.Position = UDim2.new(0.25, 0, 0.15, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+MainFrame.Visible = false
+
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Text = "Raindrop V4"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 28
+Title.TextColor3 = Color3.fromRGB(0, 100, 255)
+Title.Size = UDim2.new(1, 0, 0.15, 0)
+Title.BackgroundTransparency = 1
+
+-- Tabs
+local Tabs = Instance.new("Frame", MainFrame)
+Tabs.Size = UDim2.new(0.2, 0, 0.85, 0)
+Tabs.Position = UDim2.new(0, 0, 0.15, 0)
+Tabs.BackgroundColor3 = Color3.fromRGB(0, 100, 255)
+
+local TabContent = Instance.new("Frame", MainFrame)
+TabContent.Size = UDim2.new(0.8, 0, 0.85, 0)
+TabContent.Position = UDim2.new(0.2, 0, 0.15, 0)
+TabContent.BackgroundColor3 = Color3.fromRGB(240, 240, 255)
+
+-- Create Tab Button Function
+local function CreateTab(tabName, callback)
+    local TabButton = Instance.new("TextButton", Tabs)
+    TabButton.Text = tabName
+    TabButton.Size = UDim2.new(1, 0, 0.2, 0)
+    TabButton.Font = Enum.Font.Gotham
+    TabButton.TextSize = 18
+    TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabButton.BackgroundTransparency = 0.1
+
+    TabButton.MouseButton1Click:Connect(function()
+        for _, child in pairs(TabContent:GetChildren()) do
+            if child:IsA("Frame") then
+                child.Visible = false
+            end
+        end
+        callback()
+    end)
+end
+
+-- Create Content Frames
+local WelcomeFrame = Instance.new("Frame", TabContent)
+WelcomeFrame.Size = UDim2.new(1, 0, 1, 0)
+WelcomeFrame.BackgroundTransparency = 1
+WelcomeFrame.Visible = true
+
+local WelcomeText = Instance.new("TextLabel", WelcomeFrame)
+WelcomeText.Text = "Welcome to Raindrop V4!\nA Universal Version Instead of The Streets."
+WelcomeText.Font = Enum.Font.GothamBold
+WelcomeText.TextSize = 20
+WelcomeText.TextColor3 = Color3.fromRGB(0, 0, 0)
+WelcomeText.Size = UDim2.new(1, 0, 1, 0)
+WelcomeText.BackgroundTransparency = 1
+
+-- Credits Frame
+local CreditsFrame = Instance.new("Frame", TabContent)
+CreditsFrame.Size = UDim2.new(1, 0, 1, 0)
+CreditsFrame.BackgroundTransparency = 1
+
+local CreditsText = Instance.new("TextLabel", CreditsFrame)
+CreditsText.Text = [[
+------------------ Credits! Always Needs Credits
+My Discord: raindropoblistive
+Dev: Raindrop
+Who Made It! - Raindrop
+I Love You Guys! - From Raindrop
+]]
+CreditsText.Font = Enum.Font.Gotham
+CreditsText.TextSize = 20
+CreditsText.TextColor3 = Color3.fromRGB(0, 0, 0)
+CreditsText.Size = UDim2.new(1, 0, 1, 0)
+CreditsText.BackgroundTransparency = 1
+
+-- Features Frame
+local FeaturesFrame = Instance.new("Frame", TabContent)
+FeaturesFrame.Size = UDim2.new(1, 0, 1, 0)
+FeaturesFrame.BackgroundTransparency = 1
+
+local FeaturesText = Instance.new("TextLabel", FeaturesFrame)
+FeaturesText.Text = "Fly, Aimbot, Hitbox, and More Coming Soon!"
+FeaturesText.Font = Enum.Font.GothamBold
+FeaturesText.TextSize = 20
+FeaturesText.TextColor3 = Color3.fromRGB(0, 0, 0)
+FeaturesText.Size = UDim2.new(1, 0, 1, 0)
+FeaturesText.BackgroundTransparency = 1
+
+-- Initialize Tabs
+CreateTab("Welcome", function() WelcomeFrame.Visible = true end)
+CreateTab("Features", function() FeaturesFrame.Visible = true end)
+CreateTab("Credits", function() CreditsFrame.Visible = true end)
+
+-- CmdBar Trigger
+Player.Chatted:Connect(function(msg)
+    if msg:lower() == "/raindrop" then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+-- Keyboard Trigger
+UserInputService.InputBegan:Connect(function(input, gp)
+    if not gp and input.KeyCode == Enum.KeyCode.Slash then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
